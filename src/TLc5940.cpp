@@ -21,15 +21,15 @@ void Tlc5940::init(uint16_t initialValue)
 {
     /* Pin Setup */
     pinMode(BLANK_PIN, OUTPUT);
-    pinMode(HSPI_CS, OUTPUT);
+    pinMode(XLAT_PIN, OUTPUT);   // ESP32-C3-kompatibler CS-Pin
+
     pinMode(HSPI_MISO, OUTPUT);
     pinMode(HSPI_MOSI, OUTPUT);
     pinMode(HSPI_SCLK, OUTPUT);  
-
+    
     // SPI Setup
-    this->spi = new SPIClass(HSPI);
-    this->spi->begin();
-    this->spi->beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE3));
+    SPI.begin(HSPI_SCLK, HSPI_MISO, HSPI_MOSI, -1); // C3-SPI-Konfiguration
+    SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE3));
     
     // Timer Stuf 
     pinMode(GSCLK_PIN, OUTPUT);  
@@ -37,27 +37,13 @@ void Tlc5940::init(uint16_t initialValue)
     ledcAttachPin(GSCLK_PIN, GSCLK_TIMER);
     ledcWrite(GSCLK_TIMER, 1);
 
-    // double xlat = 976;
-    // ledcSetup(1, xlat, 8);
-    // ledcAttachPin(HSPI_CS, 1);
-    // ledcWrite(1, 2);
 
-    // ledcSetup(2, BLANK_FREQ, 12);
-    // ledcAttachPin(HSPI_MISO, 2);
-    // ledcWrite(2, 2);
-
-    blankTimer = timerBegin(1 , 8, true);
+    // Hardware-Timer
+    blankTimer = timerBegin(0 , 80, true); // Timer 0 auf dem ESP32-C3
     timerAttachInterrupt(blankTimer, &onBlank, true);
     timerAlarmWrite(blankTimer, 4096, true);
     timerAlarmEnable(blankTimer);
-    
-#if VPRG_ENABLED
-    #error VPRG -> DOT correction not supported (yet)
-#endif
-#if XERR_ENABLED
-    #error XERR -> Error detection not supported (yet)
-#endif
-    
+
     setAll(initialValue);
     update();
 }
@@ -76,7 +62,7 @@ uint8_t Tlc5940::update(){
   for (int tlc_num = 0; tlc_num < NUM_TLCS; tlc_num++) {
     for (int tlc_index = 0; tlc_index < 24; tlc_index++) {
       byte b = this->tlc_GSData[tlc_num*24 + tlc_index];
-      this->spi->transfer(b);
+      SPI.transfer(b);
     }
   }
 
