@@ -11,8 +11,8 @@ static void IRAM_ATTR onBlank() {
     digitalWrite(BLANK_PIN, HIGH);
     if (XLAT_FLAG) {
         XLAT_FLAG = 0;
-        digitalWrite(HSPI_CS, HIGH);
-        digitalWrite(HSPI_CS, LOW);
+        digitalWrite(XLAT_PIN, HIGH);
+        digitalWrite(XLAT_PIN, LOW);
     }
     digitalWrite(BLANK_PIN, LOW);
 }
